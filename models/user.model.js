@@ -1,5 +1,6 @@
-import crypto from 'crypto';
+// abhishekbhakari/vision-classes-backend/vision-classes-backend-2abfd55e8e05597a6b97163bf590df4d98519459/models/user.model.js
 
+import crypto from 'crypto';
 import { Schema, model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -29,10 +30,18 @@ const userSchema = new Schema(
       minlength: [8, 'Password must be at least 8 characters'],
       select: false, // Will not select password upon looking up a document
     },
-    subscription: {
-      id: String,
-      status: String,
-    },
+    
+    // --- MODIFICATION START ---
+    // REMOVED: subscription: { id: String, status: String },
+    // ADDED: Array to store purchased course IDs
+    purchasedCourses: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Course',
+      },
+    ],
+    // --- MODIFICATION END ---
+
     avatar: {
       public_id: {
         type: String,
@@ -54,6 +63,8 @@ const userSchema = new Schema(
   }
 );
 
+// ... (rest of the file remains the same) ...
+
 // Hashes password before saving to the database
 userSchema.pre('save', async function (next) {
   // If password is not modified then do not hash it
@@ -71,7 +82,12 @@ userSchema.methods = {
   // Will generate a JWT token with user id as payload
   generateJWTToken: async function () {
     return await jwt.sign(
-      { id: this._id, role: this.role, subscription: this.subscription },
+      // --- MODIFICATION START ---
+      // REMOVED: subscription: this.subscription
+      // We can add purchasedCourses here if needed, but it might make the token large.
+      // For now, we'll rely on the DB.
+      { id: this._id, role: this.role },
+      // --- MODIFICATION END ---
       process.env.JWT_SECRET,
       {
         expiresIn: process.env.JWT_EXPIRY,
@@ -99,4 +115,4 @@ userSchema.methods = {
 
 const User = model('User', userSchema);
 
-export default User;
+export default User;

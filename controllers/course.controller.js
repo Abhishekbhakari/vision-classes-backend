@@ -747,6 +747,7 @@
 //   });
 // });
 
+// abhishekbhakari/vision-classes-backend/vision-classes-backend-2abfd55e8e05597a6b97163bf590df4d98519459/controllers/course.controller.js
 
 import fs from 'fs/promises';
 import path from 'path';
@@ -755,6 +756,7 @@ import cloudinary from 'cloudinary';
 
 import asyncHandler from '../middlewares/asyncHandler.middleware.js';
 import Course from '../models/course.model.js';
+import User from '../models/user.model.js'; // Import User model
 import AppError from '../utils/AppError.js';
 
 /**
@@ -779,10 +781,11 @@ export const getAllCourses = asyncHandler(async (_req, res, next) => {
  * @ACCESS Private (admin only)
  */
 export const createCourse = asyncHandler(async (req, res, next) => {
-  const { title, description, category, createdBy } = req.body;
+  // Added price to destructuring
+  const { title, description, category, createdBy, price } = req.body;
 
-  if (!title || !description || !category || !createdBy) {
-    return next(new AppError('All fields are required', 400));
+  if (!title || !description || !category || !createdBy || price === undefined) {
+    return next(new AppError('All fields (title, description, category, createdBy, price) are required', 400));
   }
 
   const course = await Course.create({
@@ -790,6 +793,7 @@ export const createCourse = asyncHandler(async (req, res, next) => {
     description,
     category,
     createdBy,
+    price, // Add price
   });
 
   if (!course) {
@@ -843,15 +847,36 @@ export const createCourse = asyncHandler(async (req, res, next) => {
 /**
  * @GET_LECTURES_BY_COURSE_ID
  * @ROUTE @POST {{URL}}/api/v1/courses/:id
- * @ACCESS Private(ADMIN, subscribed users only)
- *
- * NOTE: This endpoint previously returned `course.lectures`. Now lectures include
- * homeworks and notes so frontend can show Video / Homework / Notes buttons and content.
+ * @ACCESS Private(ADMIN, purchased users only)
  */
 export const getLecturesByCourseId = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
+  const { id: courseId } = req.params;
+  const { id: userId, role } = req.user; // Get user details from req.user
 
-  const course = await Course.findById(id);
+  // --- MODIFICATION START: Access Control ---
+  const user = await User.findById(userId);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  // Check if user is ADMIN or has purchased the course
+  const hasAccess =
+    role === 'ADMIN' ||
+    user.purchasedCourses.some(
+      (purchasedId) => purchasedId.toString() === courseId
+    );
+
+  if (!hasAccess) {
+    return next(
+      new AppError(
+        'You have not purchased this course. Please purchase to view lectures.',
+        403
+      ) // 403 Forbidden
+    );
+  }
+  // --- MODIFICATION END ---
+
+  const course = await Course.findById(courseId);
 
   if (!course) {
     return next(new AppError('Invalid course id or course not found.', 404));
@@ -932,7 +957,7 @@ export const addLectureToCourseById = asyncHandler(async (req, res, next) => {
       secure_url: lectureData.secure_url,
     },
     homeworks: [], // <-- new
-    notes: '',     // <-- new
+    notes: '', // <-- new
   });
 
   course.numberOfLectures = course.lectures.length;
@@ -956,14 +981,23 @@ export const addLectureToCourseById = asyncHandler(async (req, res, next) => {
  */
 export const addHomeworkToLecture = asyncHandler(async (req, res, next) => {
   const { courseId, lectureId } = req.params;
-  const { title, description, questions = [], dueDate, points, order } = req.body;
+  const {
+    title,
+    description,
+    questions = [],
+    dueDate,
+    points,
+    order,
+  } = req.body;
 
   if (!title) return next(new AppError('Homework title is required', 400));
 
   const course = await Course.findById(courseId);
   if (!course) return next(new AppError('Course not found', 404));
 
-  const lecture = course.lectures.find((l) => l._id.toString() === lectureId.toString());
+  const lecture = course.lectures.find(
+    (l) => l._id.toString() === lectureId.toString()
+  );
   if (!lecture) return next(new AppError('Lecture not found', 404));
 
   lecture.homeworks.push({
@@ -995,10 +1029,14 @@ export const removeHomeworkFromLecture = asyncHandler(async (req, res, next) => 
   const course = await Course.findById(courseId);
   if (!course) return next(new AppError('Course not found', 404));
 
-  const lecture = course.lectures.find((l) => l._id.toString() === lectureId.toString());
+  const lecture = course.lectures.find(
+    (l) => l._id.toString() === lectureId.toString()
+  );
   if (!lecture) return next(new AppError('Lecture not found', 404));
 
-  const hwIndex = lecture.homeworks.findIndex((h) => h._id.toString() === hwId.toString());
+  const hwIndex = lecture.homeworks.findIndex(
+    (h) => h._id.toString() === hwId.toString()
+  );
   if (hwIndex === -1) return next(new AppError('Homework not found', 404));
 
   lecture.homeworks.splice(hwIndex, 1);
@@ -1019,17 +1057,39 @@ export const removeHomeworkFromLecture = asyncHandler(async (req, res, next) => 
  */
 export const getQuestionSolution = asyncHandler(async (req, res, next) => {
   const { courseId, lectureId, hwId, questionId } = req.params;
+  
+  // --- ADDING ACCESS CONTROL HERE TOO ---
+  const { id: userId, role } = req.user;
+  const user = await User.findById(userId);
+  if (!user) return next(new AppError('User not found', 404));
+  
+  const hasAccess =
+    role === 'ADMIN' ||
+    user.purchasedCourses.some(
+      (purchasedId) => purchasedId.toString() === courseId
+    );
+
+  if (!hasAccess) {
+    return next(new AppError('You do not have access to this course', 403));
+  }
+  // --- END ACCESS CONTROL ---
 
   const course = await Course.findById(courseId).lean();
   if (!course) return next(new AppError('Course not found', 404));
 
-  const lecture = (course.lectures || []).find((l) => l._id.toString() === lectureId.toString());
+  const lecture = (course.lectures || []).find(
+    (l) => l._id.toString() === lectureId.toString()
+  );
   if (!lecture) return next(new AppError('Lecture not found', 404));
 
-  const homework = (lecture.homeworks || []).find((h) => h._id.toString() === hwId.toString());
+  const homework = (lecture.homeworks || []).find(
+    (h) => h._id.toString() === hwId.toString()
+  );
   if (!homework) return next(new AppError('Homework not found', 404));
 
-  const question = (homework.questions || []).find((q) => q._id.toString() === questionId.toString());
+  const question = (homework.questions || []).find(
+    (q) => q._id.toString() === questionId.toString()
+  );
   if (!question) return next(new AppError('Question not found', 404));
 
   res.status(200).json({
@@ -1049,12 +1109,17 @@ export const updateLectureNotes = asyncHandler(async (req, res, next) => {
   const { courseId, lectureId } = req.params;
   const { notes } = req.body;
 
-  if (typeof notes !== 'string') return next(new AppError('Notes must be a string (markdown/HTML).', 400));
+  if (typeof notes !== 'string')
+    return next(
+      new AppError('Notes must be a string (markdown/HTML).', 400)
+    );
 
   const course = await Course.findById(courseId);
   if (!course) return next(new AppError('Course not found', 404));
 
-  const lecture = course.lectures.find((l) => l._id.toString() === lectureId.toString());
+  const lecture = course.lectures.find(
+    (l) => l._id.toString() === lectureId.toString()
+  );
   if (!lecture) return next(new AppError('Lecture not found', 404));
 
   lecture.notes = notes;
@@ -1186,5 +1251,5 @@ export const deleteCourseById = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: 'Course deleted successfully',
-  });
+  });
 });
