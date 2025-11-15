@@ -29,10 +29,13 @@ const userSchema = new Schema(
       minlength: [8, 'Password must be at least 8 characters'],
       select: false, // Will not select password upon looking up a document
     },
-    subscription: {
-      id: String,
-      status: String,
-    },
+    // REPLACED subscription with purchasedCourses
+    purchasedCourses: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Course',
+      },
+    ],
     avatar: {
       public_id: {
         type: String,
@@ -71,7 +74,12 @@ userSchema.methods = {
   // Will generate a JWT token with user id as payload
   generateJWTToken: async function () {
     return await jwt.sign(
-      { id: this._id, role: this.role, subscription: this.subscription },
+      // UPDATED payload to include purchasedCourses
+      {
+        id: this._id,
+        role: this.role,
+        purchasedCourses: this.purchasedCourses,
+      },
       process.env.JWT_SECRET,
       {
         expiresIn: process.env.JWT_EXPIRY,
@@ -99,4 +107,4 @@ userSchema.methods = {
 
 const User = model('User', userSchema);
 
-export default User;
+export default User;

@@ -19,6 +19,17 @@ export const razorpay = new Razorpay({
 
 const PORT = process.env.PORT || 5000;
 
+// Global handlers to log uncaught exceptions/rejections for debugging (will help trace connection resets)
+process.on('uncaughtException', (err) => {
+  // eslint-disable-next-line no-console
+  console.error('Uncaught Exception:', err && err.stack ? err.stack : err);
+  // Optionally exit or keep running for debugging. For now, keep running to avoid service interruption while we debug.
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  // eslint-disable-next-line no-console
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 app.listen(PORT, async () => {
   // Connect to DB

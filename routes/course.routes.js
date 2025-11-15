@@ -141,6 +141,7 @@ import {
   removeHomeworkFromLecture,
   getQuestionSolution,
   updateLectureNotes,
+  removeQuestionFromHomework
 } from '../controllers/course.controller.js';
 import {
   authorizeRoles,
@@ -207,16 +208,29 @@ router.put(
 // ===== Existing per-course route (kept as you had it) =====
 router
   .route('/:id')
-  .get(isLoggedIn, authorizeSubscribers, getLecturesByCourseId) // lecture access for authorized/subscribed users
+  .get(isLoggedIn, authorizeSubscribers, getLecturesByCourseId)
   .post(
     isLoggedIn,
     authorizeRoles('ADMIN'),
     upload.single('lecture'),
     addLectureToCourseById
   )
-  .put(isLoggedIn, authorizeRoles('ADMIN'), updateCourseById);
+  .put(
+    isLoggedIn,
+    authorizeRoles('ADMIN'),
+    upload.single('thumbnail'),  // Add multer middleware for thumbnail upload
+    updateCourseById
+  );
 
 // Optionally keep DELETE /:id for deleting course
 router.delete('/:id', isLoggedIn, authorizeRoles('ADMIN'), deleteCourseById);
+
+// HOMEWORK: remove question from homework
+router.delete(
+  '/:courseId/lectures/:lectureId/homeworks/:hwId/questions/:questionId',
+  isLoggedIn,
+  authorizeRoles('ADMIN'),
+  removeQuestionFromHomework
+);
 
 export default router;

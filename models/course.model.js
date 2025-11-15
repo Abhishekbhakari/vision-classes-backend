@@ -58,9 +58,10 @@
 
 // const Course = model('Course', courseSchema);
 
-// export default Course;
-
+// export default Course;// ... imports
 import { model, Schema } from 'mongoose';
+
+// ... QuestionSchema, HomeworkSchema, LectureSchema definitions (no changes)
 
 const QuestionSchema = new Schema(
   {
@@ -129,6 +130,12 @@ const courseSchema = new Schema(
       type: String,
       required: [true, 'Category is required'],
     },
+    // ADDED price field
+    price: {
+      type: Number,
+      required: [true, 'Price is required'],
+      default: 0,
+    },
     // lectures now include homeworks + notes
     lectures: [LectureSchema],
     thumbnail: {
@@ -155,4 +162,4 @@ const courseSchema = new Schema(
 
 const Course = model('Course', courseSchema);
 
-export default Course;
+export default Course;
