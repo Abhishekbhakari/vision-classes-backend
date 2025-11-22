@@ -43,4 +43,4 @@ router.route('/verify-payment').post(isLoggedIn, verifyPayment);
 router.route('/razorpay-key').get(isLoggedIn, getRazorpayApiKey);
 router.route('/').get(isLoggedIn, authorizeRoles('ADMIN'), allPayments);
 
-export default router;
+export default router;

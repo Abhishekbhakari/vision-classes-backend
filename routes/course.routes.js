@@ -141,7 +141,7 @@ import {
   removeHomeworkFromLecture,
   getQuestionSolution,
   updateLectureNotes,
-  removeQuestionFromHomework
+  removeQuestionFromHomework,
 } from '../controllers/course.controller.js';
 import {
   authorizeRoles,
@@ -156,12 +156,7 @@ const router = Router();
 router
   .route('/')
   .get(getAllCourses)
-  .post(
-    isLoggedIn,
-    authorizeRoles('ADMIN'),
-    upload.single('thumbnail'),
-    createCourse
-  )
+  .post(isLoggedIn, authorizeRoles('ADMIN'), upload.single('thumbnail'), createCourse)
   .delete(isLoggedIn, authorizeRoles('ADMIN'), removeLectureFromCourse);
 
 // ===== Lecture-related nested routes (must come BEFORE '/:id' route) =====
@@ -209,16 +204,11 @@ router.put(
 router
   .route('/:id')
   .get(isLoggedIn, authorizeSubscribers, getLecturesByCourseId)
-  .post(
-    isLoggedIn,
-    authorizeRoles('ADMIN'),
-    upload.single('lecture'),
-    addLectureToCourseById
-  )
+  .post(isLoggedIn, authorizeRoles('ADMIN'), upload.single('lecture'), addLectureToCourseById)
   .put(
     isLoggedIn,
     authorizeRoles('ADMIN'),
-    upload.single('thumbnail'),  // Add multer middleware for thumbnail upload
+    upload.single('thumbnail'), // Add multer middleware for thumbnail upload
     updateCourseById
   );
 

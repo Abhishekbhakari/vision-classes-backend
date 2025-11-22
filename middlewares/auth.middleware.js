@@ -50,7 +50,7 @@
 // });
 import jwt from 'jsonwebtoken';
 
-import AppError from '../utils/AppError.js';
+import AppError from '../utils/appError.js';
 import asyncHandler from './asyncHandler.middleware.js';
 import User from '../models/user.model.js'; // Import User
 
@@ -79,13 +79,10 @@ export const isLoggedIn = asyncHandler(async (req, _res, next) => {
 });
 
 // Middleware to check if user is admin or not
-export const authorizeRoles =
-  (...roles) =>
+export const authorizeRoles = (...roles) =>
   asyncHandler(async (req, _res, next) => {
     if (!roles.includes(req.user.role)) {
-      return next(
-        new AppError('You do not have permission to view this route', 403)
-      );
+      return next(new AppError('You do not have permission to view this route', 403));
     }
 
     next();
@@ -100,14 +97,9 @@ export const authorizeSubscribers = asyncHandler(async (req, _res, next) => {
   }
 
   // If user is not admin and has not purchased the course
-  if (
-    req.user.role !== 'ADMIN' &&
-    !req.user.purchasedCourses.includes(courseId)
-  ) {
-    return next(
-      new AppError('Please purchase this course to access it.', 403)
-    );
+  if (req.user.role !== 'ADMIN' && !req.user.purchasedCourses.includes(courseId)) {
+    return next(new AppError('Please purchase this course to access it.', 403));
   }
 
-  next();
+  next();
 });

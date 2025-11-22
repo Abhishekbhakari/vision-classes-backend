@@ -93,10 +93,7 @@ userSchema.methods = {
     const resetToken = crypto.randomBytes(20).toString('hex');
 
     // Again using crypto module to hash the generated resetToken with sha256 algorithm and storing it in database
-    this.forgotPasswordToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
+    this.forgotPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
     // Adding forgot password expiry to 15 minutes
     this.forgotPasswordExpiry = Date.now() + 15 * 60 * 1000;
@@ -107,4 +104,4 @@ userSchema.methods = {
 
 const User = model('User', userSchema);
 
-export default User;
+export default User;

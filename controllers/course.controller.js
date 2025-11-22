@@ -305,7 +305,6 @@
 // // //   });
 // // // });
 
-
 // // import fs from 'fs/promises';
 // // import path from 'path';
 
@@ -746,7 +745,6 @@
 // //     message: 'Course deleted successfully',
 // //   });
 // // });
-
 
 // import fs from 'fs/promises';
 // import path from 'path';
@@ -1192,7 +1190,7 @@ import fs from 'fs/promises';
 import { v2 as cloudinary } from 'cloudinary';
 import asyncHandler from '../middlewares/asyncHandler.middleware.js';
 import Course from '../models/course.model.js';
-import AppError from '../utils/AppError.js';
+import AppError from '../utils/appError.js';
 
 /**
  * @ALL_COURSES
@@ -1236,7 +1234,7 @@ export const createCourse = asyncHandler(async (req, res, next) => {
   if (!title || !description || !category || !createdBy) {
     return next(new AppError('All fields are required', 400));
   }
-  
+
   // If price is not provided or is negative, set it to 0
   const coursePrice = parseFloat(price) >= 0 ? parseFloat(price) : 0;
 
@@ -1255,9 +1253,7 @@ export const createCourse = asyncHandler(async (req, res, next) => {
 
   // Check if course created successfully
   if (!course) {
-    return next(
-      new AppError('Course could not be created, please try again', 400)
-    );
+    return next(new AppError('Course could not be created, please try again', 400));
   }
 
   // Run only if user sends a file
@@ -1284,7 +1280,10 @@ export const createCourse = asyncHandler(async (req, res, next) => {
       // Log the original error for debugging
       try {
         // eslint-disable-next-line no-console
-        console.error('cloudinary upload error (createCourse):', error && (error.stack || error.message || error));
+        console.error(
+          'cloudinary upload error (createCourse):',
+          error && (error.stack || error.message || error)
+        );
       } catch (e) {}
       // Empty the uploads directory without affecting the server
       try {
@@ -1292,12 +1291,7 @@ export const createCourse = asyncHandler(async (req, res, next) => {
       } catch (e) {
         // ignore cleanup error
       }
-      return next(
-        new AppError(
-          error.message || 'File not uploaded, please try again',
-          400
-        )
-      );
+      return next(new AppError(error.message || 'File not uploaded, please try again', 400));
     }
   }
 
@@ -1329,7 +1323,7 @@ export const updateCourseById = asyncHandler(async (req, res, next) => {
 
   // ADDED price to the update
   const { title, description, category, createdBy, price } = req.body;
-  
+
   // Update the course fields
   if (title) course.title = title;
   if (description) course.description = description;
@@ -1344,7 +1338,7 @@ export const updateCourseById = asyncHandler(async (req, res, next) => {
   if (req.file) {
     // Deletes the old image uploaded by the user
     if (course.thumbnail.public_id) {
-        await cloudinary.uploader.destroy(course.thumbnail.public_id);
+      await cloudinary.uploader.destroy(course.thumbnail.public_id);
     }
 
     try {
@@ -1367,9 +1361,7 @@ export const updateCourseById = asyncHandler(async (req, res, next) => {
       }
     } catch (error) {
       fs.rm(`uploads/${req.file.filename}`);
-      return next(
-        new AppError(error || 'File not uploaded, please try again', 400)
-      );
+      return next(new AppError(error || 'File not uploaded, please try again', 400));
     }
   }
 
@@ -1382,7 +1374,6 @@ export const updateCourseById = asyncHandler(async (req, res, next) => {
     course,
   });
 });
-
 
 /**
  * @GET_LECTURES_BY_COURSE_ID
@@ -1446,12 +1437,7 @@ export const addLectureToCourseById = asyncHandler(async (req, res, next) => {
       fs.rm(`uploads/${req.file.filename}`);
     } catch (error) {
       fs.rm(`uploads/${req.file.filename}`);
-      return next(
-        new AppError(
-          error.message || 'File not uploaded, please try again',
-          400
-        )
-      );
+      return next(new AppError(error.message || 'File not uploaded, please try again', 400));
     }
   }
 
@@ -1486,7 +1472,7 @@ export const deleteCourseById = asyncHandler(async (req, res, next) => {
 
   // Remove thumbnail from cloudinary
   if (course.thumbnail.public_id) {
-      await cloudinary.uploader.destroy(course.thumbnail.public_id);
+    await cloudinary.uploader.destroy(course.thumbnail.public_id);
   }
 
   // Remove lectures from cloudinary
@@ -1535,9 +1521,7 @@ export const removeLectureFromCourse = asyncHandler(async (req, res, next) => {
   }
 
   // Find the index of the lecture
-  const lectureIndex = course.lectures.findIndex(
-    (lecture) => lecture._id.toString() === lectureId
-  );
+  const lectureIndex = course.lectures.findIndex((lecture) => lecture._id.toString() === lectureId);
 
   // If no lecture send error response
   if (lectureIndex === -1) {
@@ -1665,9 +1649,8 @@ export const updateLectureNotes = asyncHandler(async (req, res, next) => {
     success: true,
     message: 'Notes updated successfully',
     lecture,
-  });
+  });
 });
-
 
 /**
  * @REMOVE_QUESTION_FROM_HOMEWORK
@@ -1706,5 +1689,5 @@ export const removeQuestionFromHomework = asyncHandler(async (req, res, next) =>
     success: true,
     message: 'Question removed from homework successfully',
     course, // or just 'homework'
-  });
+  });
 });

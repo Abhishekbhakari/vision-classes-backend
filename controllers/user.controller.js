@@ -414,7 +414,7 @@ import fs from 'fs/promises';
 import cloudinary from 'cloudinary';
 
 import asyncHandler from '../middlewares/asyncHandler.middleware.js';
-import AppError from '../utils/AppError.js';
+import AppError from '../utils/appError.js';
 import User from '../models/user.model.js';
 import sendEmail from '../utils/sendEmail.js';
 
@@ -456,17 +456,14 @@ export const registerUser = asyncHandler(async (req, res, next) => {
     password,
     avatar: {
       public_id: email,
-      secure_url:
-        'https://res.cloudinary.com/du9jzqlpt/image/upload/v1674647316/avatar_drzgxv.jpg',
+      secure_url: 'https://res.cloudinary.com/du9jzqlpt/image/upload/v1674647316/avatar_drzgxv.jpg',
     },
     // purchasedCourses will be default empty array
   });
 
   // If user not created send message response
   if (!user) {
-    return next(
-      new AppError('User registration failed, please try again later', 400)
-    );
+    return next(new AppError('User registration failed, please try again later', 400));
   }
 
   // Run only if user sends a file
@@ -490,9 +487,7 @@ export const registerUser = asyncHandler(async (req, res, next) => {
         fs.rm(`uploads/${req.file.filename}`);
       }
     } catch (error) {
-      return next(
-        new AppError(error || 'File not uploaded, please try again', 400)
-      );
+      return next(new AppError(error || 'File not uploaded, please try again', 400));
     }
   }
 
@@ -535,9 +530,7 @@ export const loginUser = asyncHandler(async (req, res, next) => {
 
   // If no user or sent password do not match then send generic response
   if (!(user && (await user.comparePassword(password)))) {
-    return next(
-      new AppError('Email or Password do not match or user does not exist', 401)
-    );
+    return next(new AppError('Email or Password do not match or user does not exist', 401));
   }
 
   // Generating a JWT token
@@ -651,12 +644,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
 
     await user.save();
 
-    return next(
-      new AppError(
-        error.message || 'Something went wrong, please try again.',
-        500
-      )
-    );
+    return next(new AppError(error.message || 'Something went wrong, please try again.', 500));
   }
 });
 
@@ -673,10 +661,7 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
   const { password } = req.body;
 
   // We are again hashing the resetToken using sha256 since we have stored our resetToken in DB using the same algorithm
-  const forgotPasswordToken = crypto
-    .createHash('sha256')
-    .update(resetToken)
-    .digest('hex');
+  const forgotPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
   // Check if password is not there then send response saying password is required
   if (!password) {
@@ -693,9 +678,7 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
 
   // If not found or expired send the response
   if (!user) {
-    return next(
-      new AppError('Token is invalid or expired, please try again', 400)
-    );
+    return next(new AppError('Token is invalid or expired, please try again', 400));
   }
 
   // Update the password if token is valid and not expired
@@ -727,9 +710,7 @@ export const changePassword = asyncHandler(async (req, res, next) => {
 
   // Check if the values are there or not
   if (!oldPassword || !newPassword) {
-    return next(
-      new AppError('Old password and new password are required', 400)
-    );
+    return next(new AppError('Old password and new password are required', 400));
   }
 
   // Finding the user by ID and selecting the password
@@ -807,9 +788,7 @@ export const updateUser = asyncHandler(async (req, res, next) => {
         fs.rm(`uploads/${req.file.filename}`);
       }
     } catch (error) {
-      return next(
-        new AppError(error || 'File not uploaded, please try again', 400)
-      );
+      return next(new AppError(error || 'File not uploaded, please try again', 400));
     }
   }
 
@@ -842,5 +821,5 @@ export const getMyCourses = asyncHandler(async (req, res, _next) => {
     success: true,
     message: 'User courses fetched successfully',
     courses: user.purchasedCourses,
-  });
+  });
 });
